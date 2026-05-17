@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.log
+*.db
+config.harmonic.ini
+config.harmonic.json
+config.json
+.venv/

@@ -43,3 +43,37 @@ Bilibili教程：https://space.bilibili.com/1970832679
 方法二(适合有Python开发经验的)：在Python环境中直接运行本`Okex_trading.py`程序。[前往查看使用说明>>](https://github.com/blockplusim/crypto_trading_service_for_tradingview/blob/main/okex_trading_guide.md)  
   
 
+---
+
+## 諧波交易服務 (`harmonic/`) — Bybit
+
+獨立模組，對接 **Bybit** 資料源，多標的掃描諧波型態並自動管理交易。
+
+**功能**
+- 諧波型態偵測：Gartley / Bat / Butterfly / Crab / Deep Crab / Shark / Cypher（多頭與空頭），ZigZag 轉折點 + 費波那契比例匹配，輸出 PRZ。
+- 交易計畫：自動計算進場(PRZ)、止損(X 外緣)、TP1/TP2/TP3。
+- 保護止盈狀態機：碰 TP1 → 止損移至成本價；碰 TP2 → 止損移至 TP1；分批 0.4/0.3/0.3。
+- 預掛單轉市價：價格跳空穿越 PRZ 或掛單逾時，限價單自動轉市價。
+- 統計面板：總計 / 進行中 / 止盈1 / 止盈2 / 無進場 / 止損 / 累計 R / 勝率 / 敗率（Web 介面，仿產品頁）。
+- 回測：以實盤同一套狀態機在歷史 K 線上重放。
+- `paper`（模擬，預設安全）與 `live`（真實下單，走 ccxt Bybit）。
+
+**安裝**
+```
+pip install -r requirements.txt
+cp config.harmonic.example.ini config.harmonic.ini   # 編輯參數
+export BYBIT_API_KEY=...  BYBIT_API_SECRET=...        # live 模式才需要
+```
+
+**使用**
+```
+python -m harmonic scan-once                          # 掃描一次
+python -m harmonic scan                               # 持續掃描 + Web 面板
+python -m harmonic web                                # 只開面板 (預設 :8800)
+python -m harmonic backtest "BTC/USDT:USDT" 4h 1000   # 回測
+python -m unittest tests.test_harmonic                # 單元測試
+```
+
+⚠️ PRZ 訊號是觀察點，並非保證進場訊號；預設為 `paper` 模擬模式，務必先回測與模擬驗證參數，再考慮切換 `live`。本程式不構成投資建議。
+  
+
