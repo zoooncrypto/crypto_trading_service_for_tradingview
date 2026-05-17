@@ -1,7 +1,7 @@
 """Aggregate statistics (the dashboard cards)."""
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List
 
 from .models import Signal, SignalStatus
 
@@ -41,3 +41,12 @@ def summarize(signals: List[Signal]) -> dict:
         "loss_rate": round(loss_rate, 1),
         "decided": decided,
     }
+
+
+def summarize_by_strategy(signals: List[Signal]) -> Dict[str, dict]:
+    """Same cards as summarize(), but split per strategy (independent
+    win rate / TP1-3 / SL / total / cumulative R for each strategy)."""
+    groups: Dict[str, List[Signal]] = {}
+    for s in signals:
+        groups.setdefault(s.strategy, []).append(s)
+    return {name: summarize(grp) for name, grp in sorted(groups.items())}

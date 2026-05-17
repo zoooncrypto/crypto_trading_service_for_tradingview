@@ -81,6 +81,7 @@ class Signal:
     tp3: float
     quality: float
     r_unit: float = 0.0  # |entry-stop| at creation; fixed R denominator
+    strategy: str = "harmonic"  # which strategy produced this signal
 
     status: SignalStatus = SignalStatus.PENDING
     entry_filled: float = 0.0      # filled entry price (0 = unfilled)

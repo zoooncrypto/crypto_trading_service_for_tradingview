@@ -3,7 +3,8 @@
   python -m harmonic scan          # continuous scan loop
   python -m harmonic scan-once     # single pass
   python -m harmonic web           # dashboard only
-  python -m harmonic backtest BTC/USDT:USDT 4h 1000
+  python -m harmonic strategies    # list registered strategies
+  python -m harmonic backtest BTC/USDT:USDT 4h 1000 [strategy]
 """
 from __future__ import annotations
 
@@ -25,6 +26,14 @@ def main(argv=None) -> int:
     if cmd == "web":
         from .web import create_app
         create_app(cfg).run(host=cfg.web_host, port=cfg.web_port)
+        return 0
+
+    if cmd == "strategies":
+        from .strategies import available, label_of
+        for n in available():
+            mark = "*" if n in cfg.strategies else " "
+            print(f"[{mark}] {n}  ({label_of(n)})")
+        print("\n* = active in config (strategies=...)")
         return 0
 
     if cmd == "scan-once":
@@ -52,10 +61,13 @@ def main(argv=None) -> int:
         symbol = argv[1] if len(argv) > 1 else "BTC/USDT:USDT"
         tf = argv[2] if len(argv) > 2 else "4h"
         limit = int(argv[3]) if len(argv) > 3 else 1000
+        strategy = argv[4] if len(argv) > 4 else cfg.strategies[0]
         ex = make_exchange(cfg)
         ohlcv = fetch_ohlcv(ex, symbol, tf, limit)
         import json
-        print(json.dumps(backtest(symbol, tf, ohlcv, cfg), indent=2))
+        print(json.dumps(
+            backtest(symbol, tf, ohlcv, cfg, strategy), indent=2
+        ))
         return 0
 
     print(__doc__)

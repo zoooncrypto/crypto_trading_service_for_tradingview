@@ -56,7 +56,14 @@ Bilibili教程：https://space.bilibili.com/1970832679
 - 預掛單轉市價：價格跳空穿越 PRZ 或掛單逾時，限價單自動轉市價。
 - 統計面板：總計 / 進行中 / 止盈1 / 止盈2 / 無進場 / 止損 / 累計 R / 勝率 / 敗率（Web 介面，仿產品頁）。
 - 回測：以實盤同一套狀態機在歷史 K 線上重放。
+- **多策略架構，可切換**：策略抽象層 + 註冊表（`harmonic/strategies/`）。`config.harmonic.ini` 的 `strategies = harmonic,...` 決定啟用哪些；未來新增策略只要加一個類別並 `register()`，引擎/狀態機/統計/面板都不用改。
+- **各策略獨立統計**：每套策略分開計算 總計 / 進行中 / 止盈1 / 止盈2 / 止盈3 / 止損 / 勝率 / 累計R；網頁可用「全部策略 / 單一策略」下拉切換，並有「各策略統計」對照表。
 - `paper`（模擬，預設安全）與 `live`（真實下單，走 ccxt Bybit）。
+
+**新增策略**
+1. 在 `harmonic/strategies/` 建一個檔，繼承 `Strategy`，實作 `detect(symbol, tf, ohlcv, cfg) -> list[Signal]`（回傳已含 entry/SL/TP 計畫的訊號）。
+2. 在 `harmonic/strategies/__init__.py` `register(YourStrategy)`。
+3. `config.harmonic.ini` 把 `strategies` 加上你的策略名即可。
 
 **安裝**
 ```
@@ -70,7 +77,8 @@ export BYBIT_API_KEY=...  BYBIT_API_SECRET=...        # live 模式才需要
 python -m harmonic scan-once                          # 掃描一次
 python -m harmonic scan                               # 持續掃描 + Web 面板
 python -m harmonic web                                # 只開面板 (預設 :8800)
-python -m harmonic backtest "BTC/USDT:USDT" 4h 1000   # 回測
+python -m harmonic strategies                          # 列出已註冊策略
+python -m harmonic backtest "BTC/USDT:USDT" 4h 1000 harmonic   # 回測(可指定策略)
 python -m unittest tests.test_harmonic                # 單元測試
 ```
 

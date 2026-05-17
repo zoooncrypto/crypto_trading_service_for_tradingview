@@ -129,5 +129,56 @@ class TestPlan(unittest.TestCase):
         self.assertLess(sig.tp2, sig.tp3)
 
 
+class TestStrategyRegistry(unittest.TestCase):
+    def test_registry_and_detect(self):
+        from harmonic.strategies import (available, get_strategy,
+                                         label_of, active_strategies)
+        self.assertIn("harmonic", available())
+        self.assertTrue(label_of("harmonic"))
+        with self.assertRaises(KeyError):
+            get_strategy("nope")
+        strat = get_strategy("harmonic")
+        # Engineered bullish Gartley ending right after D so that D is
+        # the most recent confirmed pivot (mirrors live scan timing).
+        levels = [130, 100, 200, 138.2, 169.1, 121.4]
+        ohlcv, t, prev = [], 0, levels[0]
+        for tgt in levels[1:]:
+            for k in range(7):
+                px = prev + (tgt - prev) * (k + 1) / 7
+                ohlcv.append([t * 3600000, px, px + .3, px - .3, px, 1])
+                t += 1
+            prev = tgt
+        # a few bars drifting up to confirm D, but not enough to confirm
+        # a new opposing pivot (no 6th pivot forms)
+        for px in (128, 135, 142, 150):
+            ohlcv.append([t * 3600000, px, px + .3, px - .3, px, 1])
+            t += 1
+        from harmonic.config import Config
+        cfg = Config()
+        cfg.zigzag_depth = 2
+        cfg.zigzag_deviation_pct = 0.0
+        cfg.ratio_tolerance = 0.06
+        cfg.min_quality = 0.3
+        sigs = strat.detect("GAR/USDT:USDT", "4h", ohlcv, cfg)
+        self.assertTrue(sigs)
+        self.assertEqual(sigs[0].strategy, "harmonic")
+
+    def test_summarize_by_strategy_separates(self):
+        from harmonic.stats import summarize_by_strategy
+        a = TestStateMachine()._sig()
+        a.strategy = "harmonic"
+        a.status = SignalStatus.TP3
+        a.realized_r = 1.9
+        b = TestStateMachine()._sig()
+        b.strategy = "other"
+        b.status = SignalStatus.STOPPED
+        b.realized_r = -1.0
+        out = summarize_by_strategy([a, b])
+        self.assertEqual(out["harmonic"]["tp3"], 1)
+        self.assertEqual(out["harmonic"]["win_rate"], 100.0)
+        self.assertEqual(out["other"]["stopped"], 1)
+        self.assertEqual(out["other"]["win_rate"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

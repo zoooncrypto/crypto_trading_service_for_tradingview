@@ -18,6 +18,9 @@ class Config:
     mode: str = "paper"           # paper | live
     market_type: str = "swap"     # swap (USDT perp) | spot
 
+    # strategies (comma separated in config; see harmonic.strategies)
+    strategies: List[str] = field(default_factory=lambda: ["harmonic"])
+
     # universe / scan
     quote: str = "USDT"
     timeframes: List[str] = field(default_factory=lambda: ["1h", "4h"])

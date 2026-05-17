@@ -9,11 +9,9 @@ from .config import Config
 from .data import fetch_ohlcv, make_exchange, universe
 from .executor import Executor
 from .models import SignalStatus
-from .patterns import match_window
-from .plan import build_signal
 from .state_machine import advance
 from .storage import Storage
-from .zigzag import find_pivots
+from .strategies import active_strategies
 
 log = logging.getLogger(__name__)
 
@@ -24,30 +22,33 @@ class Scanner:
         self.ex = make_exchange(cfg)
         self.store = Storage(cfg.db_path)
         self.exec = Executor(cfg, self.ex)
-        self._tf_ms = {}
+        self.strategies = active_strategies(cfg.strategies)
+        if not self.strategies:
+            raise ValueError(
+                f"no valid strategies in config: {cfg.strategies}"
+            )
+        log.info("active strategies: %s",
+                 [s.name for s in self.strategies])
 
     # ---- detection of fresh signals ----
     def _detect_new(self, symbol: str, tf: str, ohlcv: List[list]) -> None:
-        pivots = find_pivots(
-            ohlcv, self.cfg.zigzag_depth, self.cfg.zigzag_deviation_pct
-        )
-        if len(pivots) < 5:
-            return
-        m = match_window(
-            pivots, self.cfg.ratio_tolerance, self.cfg.min_quality
-        )
-        if m is None:
-            return
-        # Only act if D is recent (avoid re-emitting stale historical Ds).
-        if m.d.index < len(ohlcv) - max(self.cfg.zigzag_depth * 3, 15):
-            return
-        sig = build_signal(m, symbol, tf, self.cfg)
-        new_id = self.store.insert_if_new(sig)
-        if new_id is not None:
-            log.info("NEW %s %s %s %s q=%.2f entry=%.6f stop=%.6f",
-                     symbol, tf, sig.pattern, sig.direction.value,
-                     sig.quality, sig.entry, sig.stop)
-            self.exec.place_pending(sig)
+        for strat in self.strategies:
+            try:
+                signals = strat.detect(symbol, tf, ohlcv, self.cfg)
+            except Exception as e:  # noqa: BLE001
+                log.warning("strategy %s detect %s %s failed: %s",
+                            strat.name, symbol, tf, e)
+                continue
+            for sig in signals:
+                sig.strategy = strat.name
+                new_id = self.store.insert_if_new(sig)
+                if new_id is not None:
+                    log.info("NEW [%s] %s %s %s %s q=%.2f "
+                             "entry=%.6f stop=%.6f",
+                             strat.name, symbol, tf, sig.pattern,
+                             sig.direction.value, sig.quality,
+                             sig.entry, sig.stop)
+                    self.exec.place_pending(sig)
 
     # ---- manage already-open signals ----
     def _manage(self, sig, ohlcv: List[list]) -> None:

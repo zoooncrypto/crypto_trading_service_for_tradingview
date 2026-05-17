@@ -14,11 +14,11 @@ CREATE TABLE IF NOT EXISTS signals (
     x_price REAL, a_price REAL, c_price REAL, d_price REAL,
     prz_low REAL, prz_high REAL,
     entry REAL, stop REAL, tp1 REAL, tp2 REAL, tp3 REAL,
-    quality REAL, r_unit REAL,
+    quality REAL, r_unit REAL, strategy TEXT,
     status TEXT, entry_filled REAL, realized_r REAL,
     closed_ms INTEGER,
     entry_order_id TEXT, converted_to_market INTEGER,
-    UNIQUE(symbol, timeframe, pattern, created_ms)
+    UNIQUE(strategy, symbol, timeframe, pattern, created_ms)
 );
 CREATE INDEX IF NOT EXISTS idx_status ON signals(status);
 """
@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_status ON signals(status);
 _COLS = [
     "symbol", "timeframe", "pattern", "direction", "created_ms",
     "x_price", "a_price", "c_price", "d_price", "prz_low", "prz_high",
-    "entry", "stop", "tp1", "tp2", "tp3", "quality", "r_unit",
+    "entry", "stop", "tp1", "tp2", "tp3", "quality", "r_unit", "strategy",
     "status", "entry_filled", "realized_r", "closed_ms",
     "entry_order_id", "converted_to_market",
 ]
@@ -45,6 +45,7 @@ class Storage:
             s.symbol, s.timeframe, s.pattern, s.direction.value, s.created_ms,
             s.x_price, s.a_price, s.c_price, s.d_price, s.prz_low, s.prz_high,
             s.entry, s.stop, s.tp1, s.tp2, s.tp3, s.quality, s.r_unit,
+            s.strategy,
             s.status.value, s.entry_filled, s.realized_r, s.closed_ms,
             s.entry_order_id, 1 if s.converted_to_market else 0,
         ]
@@ -61,6 +62,7 @@ class Storage:
             entry=row["entry"], stop=row["stop"],
             tp1=row["tp1"], tp2=row["tp2"], tp3=row["tp3"],
             quality=row["quality"], r_unit=row["r_unit"],
+            strategy=row["strategy"] or "harmonic",
             status=SignalStatus(row["status"]),
             entry_filled=row["entry_filled"], realized_r=row["realized_r"],
             closed_ms=row["closed_ms"], id=row["id"],
