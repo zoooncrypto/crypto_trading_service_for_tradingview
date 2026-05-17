@@ -17,6 +17,7 @@ class Config:
     testnet: bool = True
     mode: str = "paper"           # paper | live
     market_type: str = "swap"     # swap (USDT perp) | spot
+    proxy: str = ""               # http(s)/socks proxy URL for all exchange calls
 
     # strategies (comma separated in config; see harmonic.strategies)
     strategies: List[str] = field(default_factory=lambda: ["harmonic"])
@@ -104,4 +105,6 @@ def load_config(path: str | None = None) -> Config:
     # Environment overrides for secrets (never commit keys).
     cfg.api_key = os.getenv("BYBIT_API_KEY", cfg.api_key)
     cfg.api_secret = os.getenv("BYBIT_API_SECRET", cfg.api_secret)
+    cfg.proxy = os.getenv("HARMONIC_PROXY") or os.getenv("HTTPS_PROXY") \
+        or os.getenv("HTTP_PROXY") or cfg.proxy
     return cfg

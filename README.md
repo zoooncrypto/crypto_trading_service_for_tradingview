@@ -74,6 +74,7 @@ export BYBIT_API_KEY=...  BYBIT_API_SECRET=...        # live 模式才需要
 
 **使用**
 ```
+python -m harmonic check                              # 測 Bybit 連線(先跑這個)
 python -m harmonic scan-once                          # 掃描一次
 python -m harmonic scan                               # 持續掃描 + Web 面板
 python -m harmonic web                                # 只開面板 (預設 :8800)
@@ -81,6 +82,11 @@ python -m harmonic strategies                          # 列出已註冊策略
 python -m harmonic backtest "BTC/USDT:USDT" 4h 1000 harmonic   # 回測(可指定策略)
 python -m unittest tests.test_harmonic                # 單元測試
 ```
+
+**接 Bybit 數據**
+- 抓 K 線(check / scan / backtest)**不需要 API key**；只有 `live` 真實下單才需要金鑰。
+- 若 `python -m harmonic check` 顯示 `blocked_by_allowlist`，代表執行環境的出口防火牆擋了交易所 host。在 Claude Code on the web 需把 `api.bybit.com`、`api-testnet.bybit.com` 加進環境網路政策 allowlist；或改在自己機器/VPS 執行(無此限制)。
+- 地區封鎖或公司網路可設 proxy：`config` 的 `proxy=` 或環境變數 `HARMONIC_PROXY` / `HTTPS_PROXY`。
 
 ⚠️ PRZ 訊號是觀察點，並非保證進場訊號；預設為 `paper` 模擬模式，務必先回測與模擬驗證參數，再考慮切換 `live`。本程式不構成投資建議。
   

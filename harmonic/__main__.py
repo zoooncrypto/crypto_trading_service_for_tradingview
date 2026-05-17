@@ -3,6 +3,7 @@
   python -m harmonic scan          # continuous scan loop
   python -m harmonic scan-once     # single pass
   python -m harmonic web           # dashboard only
+  python -m harmonic check         # test Bybit connectivity
   python -m harmonic strategies    # list registered strategies
   python -m harmonic backtest BTC/USDT:USDT 4h 1000 [strategy]
 """
@@ -35,6 +36,10 @@ def main(argv=None) -> int:
             print(f"[{mark}] {n}  ({label_of(n)})")
         print("\n* = active in config (strategies=...)")
         return 0
+
+    if cmd == "check":
+        from .data import check_connection
+        return check_connection(cfg)
 
     if cmd == "scan-once":
         from .scanner import Scanner
