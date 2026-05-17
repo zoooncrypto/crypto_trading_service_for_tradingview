@@ -1,0 +1,4 @@
+# 把從遊戲畫面裁切出來的按鈕模板圖片 (png) 放在這個資料夾。
+# 檔名要跟 mining_config.yaml 的 sequence 裡 template 欄位一致,例如:
+#   btn_world_map.png  btn_search.png  btn_search_go.png  tile_resource.png
+#   btn_attack.png     btn_select_troop.png  btn_march_confirm.png
