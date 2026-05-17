@@ -1,0 +1,92 @@
+# 九萬畝 自動挖地 設定檔
+# ----------------------------------------------------------------------
+# 這個檔案定義「挖一塊地」的完整點擊流程。腳本會一輪一輪重複 sequence。
+# 你要做的事:
+#   1. 用 `python auto_mining.py check` 截一張遊戲畫面
+#   2. 用看圖軟體裁切出下面用到的每個按鈕,存成 templates/ 內的 png
+#   3. 視遊戲實際 UI 增減 / 調整 sequence 的步驟順序
+# 模板圖片建議只裁「按鈕本身」、邊界貼緊、不要包含會變動的數字或背景。
+# ----------------------------------------------------------------------
+
+adb:
+  # 模擬器的 ADB 位址。常見預設:
+  #   LDPlayer/雷電  127.0.0.1:5555 (第二個實例 5557, 以此類推)
+  #   BlueStacks     127.0.0.1:5555
+  #   夜神 Nox        127.0.0.1:62001
+  #   MEmu 逍遙       127.0.0.1:21503
+  serial: "127.0.0.1:5555"
+  adb_path: "adb"           # 若 adb 不在 PATH,填完整路徑
+
+settings:
+  template_dir: "templates"
+  default_threshold: 0.85   # 模板比對信心門檻 (0~1),太多誤判就調高
+  loop_count: 50            # 一次跑幾塊地 (每天上限約 50);0 = 無限
+  loop_delay: [4, 9]        # 每塊地之間的隨機休息秒數 (擬人化)
+  tap_jitter_px: 4          # 點擊座標隨機抖動像素 (擬人化)
+  debug_dir: "debug"        # 找不到模板時自動存截圖到這裡;不需要可刪掉這行
+
+# ----------------------------------------------------------------------
+# 挖一塊地的流程 (以下是常見 SLG 流程範本,請依《九萬畝》實際 UI 調整)
+# action 種類:
+#   tap_template  截圖找模板 -> 點擊中心 (可加 offset_x/offset_y)
+#   wait_template 等模板出現才繼續 (不點擊)
+#   tap           點固定座標 x,y
+#   swipe         滑動 x1,y1 -> x2,y2
+#   wait          等待固定或隨機 [min,max] 秒
+#   back          按 Android 返回鍵
+# 共用參數:threshold / timeout / optional(找不到就跳過) / after_delay
+# ----------------------------------------------------------------------
+sequence:
+  - name: "打開世界地圖"
+    action: tap_template
+    template: "btn_world_map.png"
+    timeout: 10
+    after_delay: [1.5, 2.5]
+
+  - name: "打開搜尋資源地"
+    action: tap_template
+    template: "btn_search.png"
+    after_delay: [1, 2]
+
+  - name: "選擇要打的資源地等級 (例如選好後按搜尋)"
+    action: tap_template
+    template: "btn_search_go.png"
+    after_delay: [1.5, 3]
+
+  - name: "點地圖上找到的資源地"
+    action: tap_template
+    template: "tile_resource.png"
+    after_delay: [1, 2]
+
+  - name: "點 出征 / 攻打"
+    action: tap_template
+    template: "btn_attack.png"
+    after_delay: [1, 2]
+
+  - name: "選擇出征部隊 (若預設已選可設 optional)"
+    action: tap_template
+    template: "btn_select_troop.png"
+    optional: true
+    after_delay: [0.5, 1.5]
+
+  - name: "確認出征"
+    action: tap_template
+    template: "btn_march_confirm.png"
+    after_delay: [2, 3]
+
+  # 行軍 + 採集需要時間。兩種等法擇一:
+  # (A) 固定等一段時間 (簡單,但要抓夠長)
+  - name: "等待行軍 + 採集完成"
+    action: wait
+    seconds: [180, 240]
+
+  # (B) 或改用「等部隊變回閒置」的圖示偵測 (較精準),把上面 wait 換成:
+  # - name: "等部隊回城閒置"
+  #   action: wait_template
+  #   template: "icon_troop_idle.png"
+  #   timeout: 900
+  #   optional: true
+
+  - name: "關閉可能彈出的視窗回主畫面"
+    action: back
+    after_delay: [1, 2]
